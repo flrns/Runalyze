@@ -92,28 +92,47 @@ class ParserXMLpolarSingle extends ParserAbstractSingleXML {
 	 * Parse samples
 	 */
 	protected function parseSamples() {
+		$Num = 0;
+		$Interval = (int)$this->XML->result->{'recording-rate'};
+
 		if (isset($this->XML->result->samples)) {
 			foreach ($this->XML->result->samples->sample as $Sample) {
+				$Data = explode(',', (string)$Sample->values);
+
+				if (end($Data) == '') {
+					array_pop($Data);
+				}
+
+				$Num = count($Data);
+
 				switch ((string)$Sample->type) {
 					case 'HEARTRATE':
-						$this->TrainingObject->setArrayHeartrate( explode(',', (string)$Sample->values) );
+						$this->TrainingObject->setArrayHeartrate( $Data );
 						break;
 
 					case 'SPEED':
-						$values = array_map( array('ParserXMLpolarSingle', 'arrayMapPace'), explode(',', (string)$Sample->values) );
+						$values = array_map( array('ParserXMLpolarSingle', 'arrayMapPace'), $Data );
 						$this->TrainingObject->setArrayPace( $values );
 						break;
 
 					case 'ALTITUDE':
-						$this->TrainingObject->setArrayAltitude( explode(',', (string)$Sample->values) );
+						$this->TrainingObject->setArrayAltitude( $Data );
 						break;
 
 					case 'DISTANCE':
-						$values = array_map( array('ParserXMLpolarSingle', 'arrayMapDistance'), explode(',', (string)$Sample->values) );
+						$values = array_map( array('ParserXMLpolarSingle', 'arrayMapDistance'), $Data );
 						$this->TrainingObject->setArrayDistance( $values );
+						break;
+
+					case 'RUN_CADENCE':
+						$this->TrainingObject->setArrayCadence( $Data );
 						break;
 				}
 			}
+		}
+
+		if ($Interval > 0 && $Num > 0) {
+			$this->TrainingObject->setArrayTime(range(0, ($Num - 1)*$Interval, $Interval) );
 		}
 	}
 
