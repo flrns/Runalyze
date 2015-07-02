@@ -107,6 +107,7 @@ class SearchResults {
 			'trimp',
 
 			'cadence',
+			'stride_length',
 			'groundcontact',
 			'vertical_oscillation',
 
@@ -193,7 +194,9 @@ class SearchResults {
 	 */
 	private function addConditionForArray($key, array &$conditions) {
 		$array = array_map(
-			create_function('$value', 'return (int)$value;'),
+			function ($value) {
+				return (int)$value;
+			},
 			$_POST[$key]
 		);
 
@@ -211,19 +214,21 @@ class SearchResults {
 		if ($sign == ' LIKE ') {
 			$conditions[] = '`'.$key.'` '.$sign.' "%'.DB::getInstance()->escape($_POST[$key], false).'%"';
 		} else {
-			if (in_array($key, array('distance', 'vertical_oscillation'))) {
+			if (in_array($key, array('distance', 'vertical_oscillation', 'stride_length'))) {
 				$_POST[$key] = (float)str_replace(',', '.', $_POST[$key]);
 			}
 
 			if ($key == 'vertical_oscillation') {
 				$conditions[] = '`'.$key.'` '.$sign.' '.DB::getInstance()->escape(10*$_POST[$key]);
+			} elseif ($key == 'stride_length') {
+				$conditions[] = '`'.$key.'` '.$sign.' '.DB::getInstance()->escape(100*$_POST[$key]);
 			} else {
 				$conditions[] = '`'.$key.'` '.$sign.' '.DB::getInstance()->escape($_POST[$key]);
 			}
 
 			if (
 				($sign == '<' || $sign == '<=') &&
-				in_array($key, array('distance', 'pulse_avg', 'pulse_max', 'cadence', 'groundcontact', 'vertical_oscillation'))
+				in_array($key, array('distance', 'pulse_avg', 'pulse_max', 'cadence', 'groundcontact', 'vertical_oscillation', 'stride_length'))
 			) {
 				$conditions[] = '`'.$key.'` != 0';
 			}
@@ -267,7 +272,9 @@ class SearchResults {
 	private function addSportCondition(array &$conditions) {
 		if (is_array($_POST['sportid'])) {
 			$array = array_map(
-				create_function('$value', 'return (int)$value;'),
+				function ($value) {
+					return (int)$value;
+				},
 				$_POST['sportid']
 			);
 
@@ -316,7 +323,7 @@ class SearchResults {
 
 		if ($_POST['search-sort-by'] == 'pace') {
 			$conditions[] = '`distance` > 0';
-		} elseif (in_array($_POST['search-sort-by'], array('pulse_avg', 'pulse_max', 'cadence', 'groundcontact', 'vertical_oscillation'))) {
+		} elseif (in_array($_POST['search-sort-by'], array('pulse_avg', 'pulse_max', 'cadence', 'stride_length', 'groundcontact', 'vertical_oscillation'))) {
 			$conditions[] = '`'.$_POST['search-sort-by'].'` > 0';
 		}
 	}
